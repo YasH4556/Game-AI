@@ -211,6 +211,7 @@ while Running:
         if Enemy_state:
             print(f"Rat Location: {EnemyX},{EnemyY}")
 
+            Player_Enemy_distance = math.hypot(PlayerX -EnemyX , PlayerY - EnemyY)
 
             print("X-Direction of Rat")
             X_Difference = (EnemyX-PlayerX)/breadth_screen*100
@@ -266,7 +267,7 @@ while Running:
                     Player_Y_Obstacle.append([i,0]) #same
         #endregion
 
-        AI_input = ( PlayerX, PlayerY , EnemyX, EnemyY , Player_X_Enemy , Player_Y_Enemy , Player_X_Obstacle , Player_Y_Obstacle , Player_Obstacle_distance )
+        AI_input = ( Player_Enemy_distance, Player_X_Enemy , Player_Y_Enemy , Player_X_Obstacle , Player_Y_Obstacle , Player_Obstacle_distance )
         Player_X_Obstacle = []
         Player_Y_Obstacle = []
         Player_Obstacle_distance = []
