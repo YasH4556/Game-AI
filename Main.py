@@ -3,6 +3,17 @@ import random
 import math
 import time
 from Player import player
+from Ai_agent import Ai_agent
+
+#Correct the observation parameters
+def correct_obs(li: list)-> tuple:
+    li[0] = int(li[0]/50)
+    li[3] = int(li[3]/20)
+    li[4] = int(li[4]/20)
+    li[5] = int(li[5]/20)
+    li[6] = int(li[6]/20) 
+
+    return tuple(li)
 
 #initialisation of pygame
 pygame.init()
@@ -11,7 +22,7 @@ AI_input = []
 #Initialising Random variables
 game_last_time = time.time()
 Ai_last_time = time.time()
-Movement_Of_Ai = ""
+
 
 #create window
 length_screen = 800
@@ -30,6 +41,7 @@ Player_Icon ="Sprites/Player Icon.png"
 Player1 = player(Player_Icon , 500 , 400)
 Player_score = 0
 score_text = font.render(f"Score: {Player_score}", True , (0,0,0))
+Agent = Ai_agent(0.9,0.0001 , 0.1 , 0.9 , 0.9)
 
 #endregion
 
@@ -75,9 +87,16 @@ def obstacle(x,y,i):
 #region Ai Inputs Variable
 Player_X_Enemy = 0 # 1 is Right , 0 is Same , -1 is Left
 Player_Y_Enemy = 0 # 1 is Up , 0 is Same , -1 is Down
-Player_X_Obstacle = []
-Player_Y_Obstacle = []
-Player_Obstacle_distance = []
+obstacle_left_dist = []
+obstacle_right_dist = []
+obstacle_up_dist = []
+obstacle_down_dist = []
+Movement_Of_Ai = 0
+Ai_reward = 0
+Truncated = False
+Episode_reward = 0
+prev_AI_input = None
+prev_action = None
 
 def score(x,y):
     screen.blit(score_text, (x,y))
@@ -110,6 +129,7 @@ while Running:
         if Player1.rect.colliderect(Obstacle_rect[i]):
             Player1.x -= Player1.change_x
             Player1.y -= Player1.change_y
+            Ai_reward -= 1
     #endregion
 
     #region collision detection for enemy
@@ -117,6 +137,7 @@ while Running:
     if (collision_distance <= 48):
         Enemy_state = False
         Player_score += 10
+        Ai_reward += 100
         score_text = font.render(f"Score: {Player_score}", True , (0,0,0))
         print(Player_score)
     #endregion
@@ -140,19 +161,19 @@ while Running:
         #region movements
         if Event.type == pygame.KEYDOWN:
             if Event.key == pygame.K_LEFT:
-                Movement_Of_Ai = "Left"
+                Movement_Of_Ai = 2 # Left
                 print("L")
             if Event.key == pygame.K_RIGHT:
-                Movement_Of_Ai = "Right"
+                Movement_Of_Ai = 3 # Right
                 print("R")
             if Event.key == pygame.K_UP:
-                Movement_Of_Ai = "Up"
+                Movement_Of_Ai = 1 # Up
                 print("U")
             if Event.key == pygame.K_DOWN:
-                Movement_Of_Ai = "Down"
+                Movement_Of_Ai = 4 # Down
                 print("D")
             if Event.key == pygame.K_SPACE:
-                Movement_Of_Ai = ''
+                Movement_Of_Ai = 0 # Stop
                 print("N")
         #endregion
 
@@ -161,16 +182,16 @@ while Running:
             Running = False
 
     #region Movement 
-    if (Movement_Of_Ai == "Left"):
+    if (Movement_Of_Ai == 2):
         Player1.change_x = -0.4
-    elif(Movement_Of_Ai == "Right"):
+    elif(Movement_Of_Ai == 3):
         Player1.change_x = 0.4
     else:
         Player1.change_x = 0
     
-    if(Movement_Of_Ai == "Up"):
+    if(Movement_Of_Ai == 1):
         Player1.change_y = -0.4
-    elif(Movement_Of_Ai == "Down"):
+    elif(Movement_Of_Ai == 4):
         Player1.change_y = 0.4
     else:
         Player1.change_y = 0
@@ -179,6 +200,11 @@ while Running:
     #time randomness
     if (time.time() - game_last_time) >= 10:
         Enemy_state = False
+
+        Truncated = True
+        Episode_reward = 0
+        Ai_reward = 0
+
         for i in range(obstacle_count):
             while True:
                 x = random.randint(0,950)
@@ -195,18 +221,19 @@ while Running:
         game_last_time = time.time()
 
 
-    #region Ai input
-    if  (time.time() - Ai_last_time >= 1):
+    # Ai input
+    if  (time.time() - Ai_last_time >= 0.1):
         #Player co-odinates
-        print(f"Player Location: {Player1.x} , {Player1.y}")
+        # print(f"Player Location: {Player1.x} , {Player1.y}")
 
         #region Enemy info
         if Enemy_state:
-            print(f"Rat Location: {EnemyX},{EnemyY}")
+            # print(f"Rat Location: {EnemyX},{EnemyY}")
 
             Player_Enemy_distance = math.hypot(Player1.x -EnemyX , Player1.y - EnemyY)
+            # print(Player_Enemy_distance)
 
-            print("X-Direction of Rat")
+            # print("X-Direction of Rat")
             X_Difference = (EnemyX-Player1.x)/breadth_screen*100
             if (abs(X_Difference) > 5):
                 if (X_Difference>0):
@@ -217,7 +244,7 @@ while Running:
                 Player_X_Enemy = 0 #same
 
             
-            print("Y-Direction of Rat")
+            # print("Y-Direction of Rat")
             Y_Difference = (EnemyY - Player1.y)/length_screen*100
             if (abs(Y_Difference) > 5):
                 if (Y_Difference > 0):
@@ -234,39 +261,49 @@ while Running:
 
         #region Obstacle info
         for i in range(obstacle_count):
-            Distance = math.hypot(ObstacleX[i]-Player1.x, ObstacleY[i] - Player1.y)
+            x_distance = Player1.x-ObstacleX[i]
+            y_distance = Player1.y-ObstacleY[i]
+            Distance = math.hypot(x_distance, y_distance)
 
-            if (Distance<100):
-                Player_Obstacle_distance.append([i,Distance])
+            if (Distance<200):
 
-                print("X-Direction of obstacle")
-                X_Difference = (ObstacleX[i]-Player1.x)/breadth_screen*100
-                if (abs(X_Difference) > 5):
-                    if (X_Difference > 0):
-                        Player_X_Obstacle.append([i,1]) #Right
-                    else:
-                        Player_X_Obstacle.append([i,-1]) #Left
+                if (x_distance>0):
+                    obstacle_left_dist.append(x_distance)
                 else:
-                    Player_X_Obstacle.append([i,0]) #Same
+                    obstacle_right_dist.append(abs(x_distance))
 
-                print("Y-Direction of obstacle")
-                Y_Difference = (ObstacleY[i]-Player1.y)/length_screen*100
-                if (abs(Y_Difference) > 5):
-                    if (Y_Difference>0):
-                        Player_Y_Obstacle.append([i,-1]) #Down
-                    else:
-                        Player_Y_Obstacle.append([i,1]) #Up
+                if(y_distance>0):
+                    obstacle_up_dist.append(y_distance)
                 else:
-                    Player_Y_Obstacle.append([i,0]) #same
+                    obstacle_down_dist.append(abs(y_distance))
+                    
+
+
         #endregion
 
-        AI_input = ( Player_Enemy_distance, Player_X_Enemy , Player_Y_Enemy , Player_X_Obstacle , Player_Y_Obstacle , Player_Obstacle_distance )
-        Player_X_Obstacle = []
-        Player_Y_Obstacle = []
-        Player_Obstacle_distance = []
+        AI_input = correct_obs([ Player_Enemy_distance, Player_X_Enemy , Player_Y_Enemy , min(obstacle_left_dist , default= 200) , 
+                    min(obstacle_up_dist , default= 200) , min(obstacle_right_dist , default= 200) , min(obstacle_down_dist , default= 200)])
+
+        Movement_Of_Ai = Agent.get_action(AI_input)
+
+        if prev_AI_input is not None:
+            if (prev_AI_input[0] - AI_input[0]>0):
+                                    Ai_reward += 5
+
+            Truncated = Agent.Update(prev_action , Ai_reward , prev_AI_input , AI_input, Truncated)
+
+        print(Truncated)
+
+        Episode_reward += Ai_reward
+        Ai_reward -= 1
+
+        print(f"Ai Reward : {Ai_reward}")
+
+        obstacle_up_dist , obstacle_right_dist , obstacle_left_dist , obstacle_down_dist = [] , [] , [] ,[]
+
+        prev_AI_input = AI_input
+        prev_action = Movement_Of_Ai
+
+        Agent.decay_epsilon()
         
         Ai_last_time = time.time()
-
-    #endregion
-
-
