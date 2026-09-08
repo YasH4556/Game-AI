@@ -11,7 +11,8 @@ class player():
         self.change_y = 0
 
 
-    def update(self , screen):
-        screen.blit(self.icon , (self.x , self.y))
+    def update(self , screen , Blit = True):
+        if (Blit):
+            screen.blit(self.icon , (self.x , self.y))
         self.rect.x = self.x
         self.rect.y = self.y
