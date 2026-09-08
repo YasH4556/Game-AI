@@ -1,210 +1,275 @@
-🐀 Snake EATS
-A small Pygame-based reinforcement learning project where a Q-learning agent learns to move around a 2D arena, avoid obstacles, and catch randomly spawning enemies.
+# 🐀 Snake EATS
 
-The project started as a simple Pygame game and was extended into an RL experiment using a tabular Q-learning agent.
+> **A 2D Pygame game where a Q-learning agent learns to hunt enemies while avoiding obstacles.**
 
-🎮 What the Game Does
-Controls a player in a 1000 × 800 arena.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge&logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/Pygame-Game%20Development-green?style=for-the-badge" alt="Pygame">
+  <img src="https://img.shields.io/badge/Reinforcement%20Learning-Q--Learning-orange?style=for-the-badge" alt="Q-learning">
+</p>
 
-A rat/enemy spawns at a random location.
+---
 
-An obstacle is placed in the arena.
+## 🎮 About
 
-The AI chooses between:
+**Snake EATS** is a reinforcement learning project built from scratch with Python and Pygame.
 
-Stop
+Instead of manually programming the player to chase the enemy, the agent learns which actions are useful by interacting with the game and receiving rewards.
 
-Up
+The current environment contains:
 
-Left
+- 🐀 A randomly positioned enemy
+- ⚠️ An obstacle
+- 🤖 A Q-learning agent
+- 🗺️ A 1000 × 800 game area
+- 🔄 Random enemy respawning
+- 📊 Training metrics and graphs
 
-Right
+The main goal is simple:
 
-Down
+> **Learn to catch as many enemies as possible while avoiding obstacles.**
 
-Catching the enemy gives a large positive reward.
+---
 
-Moving closer to the enemy gives a smaller positive reward.
+## 🧠 How the AI Learns
 
-Colliding with an obstacle gives a negative reward.
+The agent uses **tabular Q-learning** with an **epsilon-greedy action-selection strategy**.
 
-The enemy respawns after being caught.
+At each decision:
 
-Training runs for multiple episodes and records:
+```text
+        Observe the game
+              ↓
+          Get state
+              ↓
+       Choose an action
+              ↓
+         Move player
+              ↓
+       Receive reward
+              ↓
+        Observe next state
+              ↓
+         Update Q-table
+```
 
-Episode reward
+### State
 
-Average kills per episode
+The agent receives information about:
 
-Q-table size
+| Observation | Description |
+|---|---|
+| Enemy distance | Distance between player and enemy |
+| Enemy X direction | Left / same / right |
+| Enemy Y direction | Up / same / down |
+| Obstacle left | Distance to obstacle on the left |
+| Obstacle up | Distance to obstacle above |
+| Obstacle right | Distance to obstacle on the right |
+| Obstacle down | Distance to obstacle below |
 
-🧠 Reinforcement Learning
-The project uses tabular Q-learning.
+Distance values are discretized before being stored in the Q-table.
 
-State
-The agent observes seven values:
+### Actions
 
-Distance to the enemy
-
-Enemy direction on the X-axis
-
-Enemy direction on the Y-axis
-
-Distance to the nearest obstacle on the left
-
-Distance to the nearest obstacle above
-
-Distance to the nearest obstacle on the right
-
-Distance to the nearest obstacle below
-
-Continuous distance values are discretized before being used as Q-table keys.
-
-Actions
-The action space contains five actions:
-
+```text
 0 → Stop
 1 → Up
 2 → Left
 3 → Right
 4 → Down
-Reward
-The current reward design is approximately:
+```
 
-Catch enemy          +50
-Move closer          +1
-Hit obstacle         -2
-The reward is reset after each AI decision so that each Q-learning update receives the reward associated with the corresponding decision interval.
+---
 
-📈 Training Results
-The agent has been trained for 50,000 episodes.
+## 🏆 Reward System
 
-The current experiment shows:
+The current reward structure encourages the agent to approach and catch the enemy while discouraging obstacle collisions.
 
-Episode reward trending upward.
+| Event | Reward |
+|---|---:|
+| 🐀 Catch enemy | **+50** |
+| 🎯 Move closer to enemy | **+1** |
+| ⚠️ Hit obstacle | **−2** |
 
-Q-table growing as new states are encountered.
+The reward is reset after each AI decision so that each Q-learning update receives the reward associated with that decision interval.
 
-Average kills per episode increasing substantially during training.
+---
 
-The latest experiment reached roughly 0.7–0.8 average kills per episode, showing a clear improvement compared with the beginning of training.
+## 📈 Training Results
 
-Note: "kill rate" in the plots currently represents average kills per episode, not the percentage probability of getting a kill.
+The latest experiment used:
 
-🗂️ Project Structure
-A typical project layout is:
+**50,000 training episodes**
 
+The training graphs show:
+
+### Reward
+
+The moving average of episode reward increases throughout training, indicating that the agent is generally receiving better returns as training progresses.
+
+### Q-table
+
+The Q-table grows as the agent encounters new states.
+
+> A larger Q-table does **not** automatically mean better performance. It mainly indicates that more unique states have been encountered.
+
+### Average Kills per Episode
+
+The most important performance metric for this project is the average number of enemies caught per episode.
+
+The latest training run shows a clear upward trend, reaching roughly:
+
+**~0.7–0.8 kills per episode**
+
+This is a significant improvement compared with the beginning of training.
+
+---
+
+## ⚙️ Current Agent Configuration
+
+```python
+Agent = Ai_agent(
+    0.9,       # Initial epsilon
+    0.0001,    # Epsilon decay
+    0.1,       # Minimum epsilon
+    0.9,       # Learning rate
+    0.9        # Discount factor
+)
+```
+
+### What these parameters mean
+
+| Parameter | Value | Purpose |
+|---|---:|---|
+| Initial ε | 0.9 | Starts with lots of exploration |
+| ε decay | 0.0001 | Gradually reduces exploration |
+| Minimum ε | 0.1 | Keeps some exploration |
+| Learning rate α | 0.9 | Controls how strongly new information changes Q-values |
+| Discount factor γ | 0.9 | Controls how much future rewards matter |
+
+---
+
+## 🗂️ Project Structure
+
+```text
 Snake EATS/
 │
 ├── main.py
 ├── Player.py
 ├── Ai_agent.py
+├── README.md
 │
 └── Sprites/
+    ├── Icon.png
     ├── Player Icon.png
     ├── rat.png
-    ├── warning.png
-    └── Icon.png
-The main game imports:
+    └── warning.png
+```
 
-from Player import player
-from Ai_agent import Ai_agent
-and loads its graphics from the Sprites directory.
+---
 
-⚙️ Requirements
-Python 3.x with:
+## 🛠️ Requirements
 
-Pygame
+- Python 3.x
+- Pygame
+- NumPy
+- Matplotlib
+- tqdm
 
-NumPy
+Install the dependencies:
 
-Matplotlib
-
-tqdm
-
-Install the dependencies with:
-
+```bash
 pip install pygame numpy matplotlib tqdm
-▶️ Running the Project
-Make sure the project structure and sprite paths are preserved, then run the main Python file:
+```
 
+---
+
+## ▶️ Run the Project
+
+Clone/download the project and make sure the `Sprites` folder is in the correct location.
+
+Then run:
+
+```bash
 python main.py
-The training loop will run through the configured number of episodes and display the training graphs when finished.
+```
 
-🔧 Current Q-Learning Configuration
-The current agent configuration is:
+The program will train the Q-learning agent and display the training graphs after training finishes.
 
-Agent = Ai_agent(
-    0.9,      # Initial epsilon
-    0.0001,   # Epsilon decay
-    0.1,      # Minimum epsilon
-    0.9,      # Learning rate
-    0.9       # Discount factor
-)
-The agent uses an epsilon-greedy policy:
+---
 
-High epsilon → more exploration
+## 📊 Training Metrics
 
-Lower epsilon → more exploitation of learned Q-values
+The project currently tracks:
 
-📊 Training Graphs
-Three metrics are currently plotted:
+```text
+Episode Reward
+      │
+      ├── Measures cumulative reward
+      │
+Q-table Size
+      │
+      ├── Measures unique states encountered
+      │
+Average Kills
+      │
+      └── Measures actual game performance
+```
 
-Reward Distribution
-A moving average of episode rewards. An upward trend generally indicates that the agent is receiving better cumulative rewards.
+The graphs use a moving average to make the overall training trend easier to see despite the natural randomness of reinforcement learning.
 
-Q-Table Size
-Shows the number of unique states stored in the Q-table over training.
+---
 
-A growing Q-table means the agent is encountering new states; Q-table size alone is not a measure of how well the agent is learning.
+## 🔬 What This Project Demonstrates
 
-Average Kills per Episode
-Shows the moving average number of enemies caught in each episode.
+This project was built to explore practical reinforcement learning concepts:
 
-This is currently the most direct performance metric for the game's objective.
+- Reinforcement learning
+- Q-learning
+- Q-tables
+- Epsilon-greedy exploration
+- Exploration vs. exploitation
+- Reward shaping
+- State discretization
+- Temporal-difference learning
+- Training evaluation
+- Pygame-based environments
 
-🚧 Future Improvements
-Possible next steps:
+---
 
-Add multiple obstacles.
+## 🚧 Possible Improvements
 
-Add moving enemies.
+Future versions could include:
 
-Improve the state representation.
+- [ ] Save and load the trained Q-table
+- [ ] Add multiple obstacles
+- [ ] Add moving enemies
+- [ ] Improve the state representation
+- [ ] Add a dedicated AI visualization mode
+- [ ] Compare the trained agent against a random agent
+- [ ] Experiment with different reward functions
+- [ ] Tune learning rate and discount factor
+- [ ] Add more detailed training statistics
+- [ ] Separate the game simulation from rendering for faster training
 
-Experiment with learning rate and discount factor.
+---
 
-Compare different reward functions.
+## 💡 Project Goal
 
-Save and load the trained Q-table.
+The purpose of **Snake EATS** is not just to make a game.
 
-Add a separate visual mode for watching the trained agent.
+It is an experiment in answering a simple question:
 
-Add a proper game-over condition.
+> **Can an agent learn how to play a game from rewards instead of being explicitly programmed with the strategy?**
 
-Compare trained performance against a random agent.
+The current results suggest that it can. 🤖
 
-Create a smoother visualization of training progress.
+---
 
-📚 Purpose
-This project is primarily a learning experiment in:
+<p align="center">
 
-Python
+### 🐀 Built with Python • Pygame • NumPy • Q-learning
 
-Pygame
+**Snake EATS — teaching a tiny AI to chase rats.**
 
-Reinforcement Learning
-
-Q-learning
-
-State representation
-
-Reward shaping
-
-Exploration vs. exploitation
-
-Training evaluation
-
-It is intended as a hands-on demonstration of how an agent can learn a behavior from rewards rather than being explicitly programmed with a fixed strategy.
-
-Built with Python + Pygame + Q-learning 🐀🤖
+</p>
